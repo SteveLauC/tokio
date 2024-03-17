@@ -905,5 +905,24 @@ impl Inner {
     }
 }
 
+cfg_unix! {
+    use crate::io::AsyncFileExt;
+    use std::os::unix::fs::FileExt;
+
+    impl AsyncFileExt for File {
+        async fn read_at(&self, buf: &mut [u8], offset: u64) -> io::Result<usize> {
+            let std = Arc::clone(&self.std);
+            let mut buf = buf.to_vec();
+            asyncify(move || std.read_at(&mut buf, offset)).await
+        }
+
+        async fn write_at(&self, buf: &[u8], offset: u64) -> io::Result<usize> {
+            let std = Arc::clone(&self.std);
+            let buf = buf.to_vec();
+            asyncify(move || std.write_at(&buf, offset)).await
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests;
